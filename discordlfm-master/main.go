@@ -8,10 +8,11 @@ import (
 	"github.com/shkh/lastfm-go/lastfm"
 	"log"
 	"os"
+	"io"
 	"sync"
 	"time"
 	"unicode"
-  "os/exec"
+	"strings"
 )
 
 const (
@@ -82,20 +83,57 @@ func main() {
 	run(dsession, lfm)
 }
 
-func censure(s string) string{
+func redactVowels(s string) string{
+	vowels := []byte{'a','e','i','o','u'}
+	var res strings.Builder
 
+	first := true
+	for i := range s{
+		found := false
+		if first{
+			for _,v := range vowels{
+				if s[i]==v {
+					res.WriteString("*")
+					found=true
+					first=false
+					break
+				}
+			}
+		}
+		if !found{
+			res.WriteByte(s[i])
+		}
+	}
+	return res.String()
+}
+
+func censure(s string) string{
     for i := 0; i < len(s); i++ {
         if s[i] > unicode.MaxASCII {
             return s
         }
     }
-	s = "\"" + s + "\""
-    cmd := exec.Command("python","filter.py",s)
-    stdout,err := cmd.Output()
-    if err != nil{
-      panic(err)
-    }
-    return string(stdout[1:len(stdout)-3])
+	fi, err := os.Open("filter.py")
+	if err != nil{
+		panic(err)
+	}
+	buf := make([]byte,1024)
+	for {
+		n,err:=fi.Read(buf)
+		if err != nil && err!=io.EOF {
+			panic(err)
+		}
+		if n==0 {
+			break
+		}
+		swear := string(buf)
+		for strings.Contains(strings.ToLower(s),swear) {
+			idx := strings.Index(strings.ToLower(s),swear)
+			s = s[:idx] + redactVowels(s[idx:idx+len(swear)]) + s[idx+len(swear):]
+		}
+	}
+	fi.Close()
+    return s
 }
 
 func run(s *discordgo.Session, lfm *lastfm.Api) {
