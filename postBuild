@@ -1,6 +1,6 @@
 conda install -c conda-forge rise
 jupyter-nbextension install rise --py --sys-prefix
 jupyter nbextension enable rise --py --sys-prefix
-jupyter trust Alcohol(2).ipynb
-jupyter nbconvert --ExecutePreprocessor.timeout=600 --to notebook --execute Alcohol(2).ipynb
-jupyter trust Alcohol(2).nbconvert.ipynb
+jupyter trust index.ipynb
+jupyter nbconvert --ExecutePreprocessor.timeout=600 --to notebook --execute index.ipynb
+jupyter trust index.nbconvert.ipynb
